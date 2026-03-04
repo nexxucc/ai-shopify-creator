@@ -1,0 +1,31 @@
+# Environment variables
+.env
+
+# Node modules
+node_modules/
+
+# Docker volumes
+postgres_data/
+redis_data/
+n8n_data/
+qdrant_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dashboard/dist/
+
+# Temp scripts
+fix-*.js
+switch-*.js
+update-*.js

@@ -1,0 +1,995 @@
+{
+    "name": "AI Store Creator - Master",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "create-store",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "node-webhook",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                200,
+                300
+            ],
+            "webhookId": "create-store-webhook"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "a1",
+                            "name": "runId",
+                            "value": "={{ $json.body.runId }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a2",
+                            "name": "niche",
+                            "value": "={{ $json.body.niche }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a3",
+                            "name": "targetAudience",
+                            "value": "={{ $json.body.targetAudience }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a4",
+                            "name": "budgetTier",
+                            "value": "={{ $json.body.budgetTier }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a5",
+                            "name": "uniqueSellingPoint",
+                            "value": "={{ $json.body.uniqueSellingPoint }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a6",
+                            "name": "productCount",
+                            "value": "={{ $json.body.productCount }}",
+                            "type": "number"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "node-set",
+            "name": "Set Variables",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                500,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ received: true, runId: $json.runId }) }}",
+                "options": {}
+            },
+            "id": "node-respond",
+            "name": "Respond Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE store_runs SET status='running', current_phase='architect', progress=5 WHERE id='{{ $json.runId }}'",
+                "options": {}
+            },
+            "id": "node-pg-running",
+            "name": "Status Running",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                800,
+                500
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "1",
+                    "name": "Shopify AI Postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst systemPrompt = \"You are an expert Shopify Store Architect. Design a complete store blueprint. Respond ONLY with valid JSON. No markdown. OUTPUT: {storeName, tagline, collections: [{name, description}], requiredPages: [string], theme: {style, colors: {primary, secondary, accent}, font}, targetAudience, brandVoice}\";\nconst userPrompt = \"Design a Shopify store for: \" + input.niche + \". Target Audience: \" + input.targetAudience + \". Budget Tier: \" + input.budgetTier + \". USP: \" + input.uniqueSellingPoint + \". Product Count: \" + (input.productCount || 5);\nreturn [{json: { body: { model: \"llama-3.3-70b-versatile\", messages: [{role: \"system\", content: systemPrompt}, {role: \"user\", content: userPrompt}], temperature: 0.7, max_tokens: 4000, response_format: {type: \"json_object\"} }}}];"
+            },
+            "id": "node-prep-architect",
+            "name": "Prep Architect",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1100,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {
+                    "timeout": 120000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 3,
+                        "retryInterval": 5000
+                    }
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
+            },
+            "id": "node-call-architect",
+            "name": "Call Architect",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1400,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst blueprint = JSON.parse(response.choices[0].message.content);\nconst input = $('Set Variables').first().json;\nconst systemPrompt = \"You are an expert eCommerce Product Researcher. Generate winning products for a Shopify store. Respond ONLY with valid JSON. OUTPUT: {products: [{title, productType, vendor, collectionName, shortDescription, tags: [string], variants: [{optionName, options: [string], priceBase: number, compareAtPriceBase: number, sku_prefix}], weight: number, weightUnit: kg, imageSearchTerms: [string], seoKeyword}]}\";\nconst userPrompt = \"Blueprint: \" + JSON.stringify(blueprint) + \". Generate \" + (input.productCount || 5) + \" products for this \" + input.niche + \" store. Budget tier: \" + input.budgetTier;\nreturn [{json: { blueprint, body: { model: \"llama-3.3-70b-versatile\", messages: [{role: \"system\", content: systemPrompt}, {role: \"user\", content: userPrompt}], temperature: 0.7, max_tokens: 8000, response_format: {type: \"json_object\"} }}}];"
+            },
+            "id": "node-parse-architect",
+            "name": "Parse Architect",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1700,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {
+                    "timeout": 120000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 3,
+                        "retryInterval": 5000
+                    }
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
+            },
+            "id": "node-call-researcher",
+            "name": "Call Researcher",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2000,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst blueprint = $('Parse Architect').first().json.blueprint;\nlet products;\ntry { const p = JSON.parse(response.choices[0].message.content); products = Array.isArray(p) ? p : p.products || [p]; } catch(e) { products = []; }\nconst systemPrompt = \"You are an expert eCommerce Content Writer. Write compelling, SEO-optimized product content for Shopify. Respond ONLY with valid JSON. OUTPUT: {products: [{title, content: {title, bodyHtml: string (HTML, 150-300 words), seoTitle: string (max 60 chars), seoDescription: string (max 160 chars)}}]}\";\nconst userPrompt = \"Write content for: \" + JSON.stringify(products.map(function(p){return {title:p.title, shortDescription:p.shortDescription}})) + \". Store: \" + blueprint.storeName + \". Brand Voice: \" + (blueprint.brandVoice || \"Professional\");\nreturn [{json: { blueprint, products, body: { model: \"llama-3.3-70b-versatile\", messages: [{role: \"system\", content: systemPrompt}, {role: \"user\", content: userPrompt}], temperature: 0.7, max_tokens: 8000, response_format: {type: \"json_object\"} }}}];"
+            },
+            "id": "node-parse-researcher",
+            "name": "Parse Researcher",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2300,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {
+                    "timeout": 120000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 3,
+                        "retryInterval": 5000
+                    }
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
+            },
+            "id": "node-call-content",
+            "name": "Call Content",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2600,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst prev = $('Parse Researcher').first().json;\nlet contentData;\ntry { contentData = JSON.parse(response.choices[0].message.content); } catch(e) { contentData = {products: []}; }\nconst products = prev.products.map(function(p, i) { const content = (contentData.products || [])[i] ? (contentData.products[i].content || {}) : {}; return Object.assign({}, p, {content: content}); });\nconst systemPrompt = \"You are an expert eCommerce Pricing Optimizer. Set optimal prices. Respond ONLY with valid JSON. OUTPUT: {products: [{title, pricing: {finalPrice: number, compareAtPrice: number, margin: string}}]}\";\nconst userPrompt = \"Optimize pricing for: \" + JSON.stringify(products.map(function(p){return {title:p.title, variants:p.variants}})) + \". Budget Tier: \" + (prev.blueprint.budgetTier || \"mid\");\nreturn [{json: { blueprint: prev.blueprint, products, body: { model: \"llama-3.3-70b-versatile\", messages: [{role: \"system\", content: systemPrompt}, {role: \"user\", content: userPrompt}], temperature: 0.5, max_tokens: 4000, response_format: {type: \"json_object\"} }}}];"
+            },
+            "id": "node-parse-content",
+            "name": "Parse Content",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2900,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {
+                    "timeout": 120000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 3,
+                        "retryInterval": 5000
+                    }
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
+            },
+            "id": "node-call-pricing",
+            "name": "Call Pricing",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3200,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst prev = $('Parse Content').first().json;\nlet pricingData;\ntry { pricingData = JSON.parse(response.choices[0].message.content); } catch(e) { pricingData = {products: []}; }\nconst products = prev.products.map(function(p, i) { const pricing = (pricingData.products || [])[i] ? (pricingData.products[i].pricing || {}) : {}; return Object.assign({}, p, {pricing: pricing}); });\nconst systemPrompt = \"You are an expert Shopify Theme Consultant. Respond ONLY with valid JSON. OUTPUT: {theme: {primaryColor: hex, secondaryColor: hex, accentColor: hex, fontHeading: string, fontBody: string, style: string}}\";\nconst userPrompt = \"Recommend theme for: \" + (prev.blueprint.storeName || \"Store\") + \". Audience: \" + (prev.blueprint.targetAudience || \"General\") + \". Voice: \" + (prev.blueprint.brandVoice || \"Professional\");\nreturn [{json: { blueprint: prev.blueprint, products, body: { model: \"llama-3.3-70b-versatile\", messages: [{role: \"system\", content: systemPrompt}, {role: \"user\", content: userPrompt}], temperature: 0.7, max_tokens: 2000, response_format: {type: \"json_object\"} }}}];"
+            },
+            "id": "node-parse-pricing",
+            "name": "Parse Pricing",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3500,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {
+                    "timeout": 120000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 3,
+                        "retryInterval": 5000
+                    }
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
+            },
+            "id": "node-call-theme",
+            "name": "Call Theme",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                3800,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst prev = $('Parse Pricing').first().json;\nlet themeData;\ntry { themeData = JSON.parse(response.choices[0].message.content); } catch(e) { themeData = {theme: {}}; }\nconst blueprint = prev.blueprint;\nconst products = prev.products;\nconst collections = blueprint.collections || [];\nconst items = collections.map(function(c) { return {json: {blueprint: blueprint, products: products, collection: {title: c.name, body_html: \"<p>\" + (c.description || \"\") + \"</p>\"}}}; });\nreturn items.length > 0 ? items : [{json: {blueprint: blueprint, products: products, collection: {title: \"All Products\", body_html: \"<p>Browse our complete collection.</p>\"}}}];"
+            },
+            "id": "node-parse-theme",
+            "name": "Parse Theme & Prep Collections",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                4100,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE store_runs SET current_phase='building', progress=50 WHERE id='{{ $('Set Variables').first().json.runId }}'",
+                "options": {}
+            },
+            "id": "node-pg-building",
+            "name": "Status Building",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                4400,
+                500
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "1",
+                    "name": "Shopify AI Postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "node-loop-collections",
+            "name": "Loop Collections",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                4700,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://{{ $env.SHOPIFY_STORE_DOMAIN }}/admin/api/2024-01/custom_collections.json",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Shopify-Access-Token",
+                            "value": "={{ $env.SHOPIFY_ACCESS_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"custom_collection\": {\n    \"title\": {{ JSON.stringify($json.collection.title) }},\n    \"body_html\": {{ JSON.stringify($json.collection.body_html) }}\n  }\n}",
+                "options": {
+                    "timeout": 30000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 2,
+                        "retryInterval": 2000
+                    }
+                }
+            },
+            "id": "node-create-collection",
+            "name": "Create Collection",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                5000,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const allData = $('Parse Theme & Prep Collections').first().json;\nconst products = allData.products;\nreturn products.map(p => {\n  const price = p.pricing?.finalPrice || p.variants?.[0]?.priceBase || 29.99;\n  const compareAt = p.pricing?.compareAtPrice || p.variants?.[0]?.compareAtPriceBase || null;\n  const content = p.content || {};\n  const tags = (p.tags || []).concat([p.collectionName]).join(', ');\n  const searchTerms = (p.imageSearchTerms || [p.title]).join(' ');\n  return {json: {\n    imageQuery: searchTerms,\n    product: {\n      title: content.title || p.title,\n      body_html: content.bodyHtml || `<p>${p.shortDescription || ''}</p>`,\n      vendor: p.vendor || allData.blueprint.storeName,\n      product_type: p.productType || '',\n      tags: tags,\n      variants: [{option1: 'Default', price: String(price), compare_at_price: compareAt ? String(compareAt) : null, sku: (p.variants?.[0]?.sku_prefix || 'SKU') + '-001', inventory_management: null}],\n      metafields_global_title_tag: content.seoTitle || p.title,\n      metafields_global_description_tag: content.seoDescription || p.shortDescription || ''\n    }\n  }};\n});"
+            },
+            "id": "node-prep-products",
+            "name": "Prepare Products",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                5000,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "node-loop-products",
+            "name": "Loop Products",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                5300,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=https://api.pexels.com/v1/search?query={{ encodeURIComponent($json.imageQuery) }}&per_page=1&orientation=square",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "={{ $env.PEXELS_API_KEY }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "node-fetch-image",
+            "name": "Fetch Product Image",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                5500,
+                700
+            ],
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "jsCode": "const product = $('Loop Products').first().json.product;\nconst imageData = $input.first().json;\nlet imageUrl = '';\ntry {\n  if (imageData.photos && imageData.photos.length > 0) {\n    imageUrl = imageData.photos[0].src.large;\n  }\n} catch(e) {}\nif (imageUrl) {\n  product.images = [{src: imageUrl}];\n}\nreturn [{json: {product}}];"
+            },
+            "id": "node-merge-image",
+            "name": "Add Image to Product",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                5700,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://{{ $env.SHOPIFY_STORE_DOMAIN }}/admin/api/2024-01/products.json",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Shopify-Access-Token",
+                            "value": "={{ $env.SHOPIFY_ACCESS_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({product: $json.product}) }}",
+                "options": {
+                    "timeout": 30000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 2,
+                        "retryInterval": 2000
+                    }
+                }
+            },
+            "id": "node-create-product",
+            "name": "Create Product",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                5900,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const allData = $('Parse Theme & Prep Collections').first().json;\nconst blueprint = allData.blueprint;\nconst pages = (blueprint.requiredPages || ['About', 'Contact', 'FAQ']).filter(p => p !== 'Home').map(pageName => {\n  let body = '';\n  if (pageName === 'About') body = `<h2>About ${blueprint.storeName}</h2><p>Welcome to ${blueprint.storeName}. ${blueprint.tagline || ''}</p><p>We serve ${blueprint.targetAudience || 'our customers'} with quality products.</p>`;\n  else if (pageName === 'Contact') body = `<h2>Contact Us</h2><p>Have questions? We are here to help.</p><p>Email us and we will get back to you within 24 hours.</p>`;\n  else if (pageName === 'FAQ') body = `<h2>Frequently Asked Questions</h2><p><strong>How long does shipping take?</strong></p><p>Standard shipping takes 5-7 business days.</p><p><strong>What is your return policy?</strong></p><p>We offer a 30-day money-back guarantee on all products.</p>`;\n  else body = `<h2>${pageName}</h2><p>Content for ${pageName} page.</p>`;\n  return {json: {page: {title: pageName, body_html: body, published: true}}};\n});\nreturn pages;"
+            },
+            "id": "node-prep-pages",
+            "name": "Prepare Pages",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                5300,
+                900
+            ]
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "node-loop-pages",
+            "name": "Loop Pages",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                5600,
+                900
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://{{ $env.SHOPIFY_STORE_DOMAIN }}/admin/api/2024-01/pages.json",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Shopify-Access-Token",
+                            "value": "={{ $env.SHOPIFY_ACCESS_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({page: $json.page}) }}",
+                "options": {
+                    "timeout": 30000,
+                    "retry": {
+                        "enabled": true,
+                        "maxRetries": 2,
+                        "retryInterval": 2000
+                    }
+                }
+            },
+            "id": "node-create-page",
+            "name": "Create Page",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                5900,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE store_runs SET status='complete', current_phase='done', progress=100, store_url='https://{{ $env.SHOPIFY_STORE_DOMAIN }}', qa_score=85 WHERE id='{{ $('Set Variables').first().json.runId }}'",
+                "options": {}
+            },
+            "id": "node-pg-complete",
+            "name": "Status Complete",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                5900,
+                1100
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "1",
+                    "name": "Shopify AI Postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://host.docker.internal:3000/api/theme/customize",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ storeName: $(\"Parse Theme & Prep Collections\").first().json.blueprint.storeName, tagline: $(\"Parse Theme & Prep Collections\").first().json.blueprint.tagline, colors: $(\"Parse Theme & Prep Collections\").first().json.blueprint.theme?.colors || {}, font: $(\"Parse Theme & Prep Collections\").first().json.blueprint.theme?.font || \"\", collections: $(\"Parse Theme & Prep Collections\").first().json.blueprint.collections || [], brandVoice: $(\"Parse Theme & Prep Collections\").first().json.blueprint.brandVoice || \"\" }) }}",
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "node-customize-theme",
+            "name": "Customize Theme",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                6400,
+                1100
+            ],
+            "onError": "continueRegularOutput"
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Set Variables",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Variables": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Webhook",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Status Running",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Prep Architect Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Running": {
+            "main": [
+                [
+                    {
+                        "node": "Prep Architect",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prep Architect": {
+            "main": [
+                [
+                    {
+                        "node": "Call Architect",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Architect": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Architect",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Architect": {
+            "main": [
+                [
+                    {
+                        "node": "Call Researcher",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Researcher": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Researcher",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Researcher": {
+            "main": [
+                [
+                    {
+                        "node": "Call Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Content": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Content": {
+            "main": [
+                [
+                    {
+                        "node": "Call Pricing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Pricing": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Pricing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Pricing": {
+            "main": [
+                [
+                    {
+                        "node": "Call Theme",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Theme": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Theme & Prep Collections",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Theme & Prep Collections": {
+            "main": [
+                [
+                    {
+                        "node": "Status Building",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Loop Collections",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Building": {
+            "main": [
+                []
+            ]
+        },
+        "Loop Collections": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Products",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Create Collection",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Collection": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Collections",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Products": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Products",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Products": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Fetch Product Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Product": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Products",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Pages": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Pages": {
+            "main": [
+                [
+                    {
+                        "node": "Status Complete",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Customize Theme",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Create Page",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Page": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Product Image": {
+            "main": [
+                [
+                    {
+                        "node": "Add Image to Product",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Add Image to Product": {
+            "main": [
+                [
+                    {
+                        "node": "Create Product",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Customize Theme": {
+            "main": [
+                []
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": []
+}

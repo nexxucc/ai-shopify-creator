@@ -1,0 +1,105 @@
+{
+    "name": "AI Store Creator - Error Handler",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "node-error-trigger",
+            "name": "Error Trigger",
+            "type": "n8n-nodes-base.errorTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst error = execution.error || {};\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst errorMsg = (error.message || 'Unknown error').replace(/'/g, \"''\").substring(0, 500);\nconst errorStack = (error.stack || '').replace(/'/g, \"''\").substring(0, 500);\n\n// Try to extract runId from the workflow data\nlet runId = null;\ntry {\n  const nodes = execution.workflowData?.nodes || [];\n  const setVarsNode = nodes.find(n => n.name === 'Set Variables');\n  if (setVarsNode?.parameters?.assignments?.assignments) {\n    const runIdAssignment = setVarsNode.parameters.assignments.assignments.find(a => a.name === 'runId');\n    if (runIdAssignment) runId = runIdAssignment.value;\n  }\n} catch(e) {}\n\n// Also try from the execution data directly\nif (!runId) {\n  try {\n    const resultData = execution.resultData?.runData?.['Set Variables'];\n    if (resultData?.[0]?.data?.main?.[0]?.[0]?.json?.runId) {\n      runId = resultData[0].data.main[0][0].json.runId;\n    }\n  } catch(e) {}\n}\n\nreturn [{ json: { runId, lastNode, errorMsg, errorStack } }];"
+            },
+            "id": "node-extract-error",
+            "name": "Extract Error Info",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO error_log (run_id, node_name, error_message, error_stack, created_at) VALUES ({{ $json.runId ? \"'\" + $json.runId + \"'\" : 'NULL' }}, '{{ $json.lastNode }}', '{{ $json.errorMsg }}', '{{ $json.errorStack }}', NOW())",
+                "options": {}
+            },
+            "id": "node-log-error",
+            "name": "Log Error to DB",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                650,
+                200
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "1",
+                    "name": "Shopify AI Postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE store_runs SET status='error', error_message='{{ $json.errorMsg }}' WHERE status='running'",
+                "options": {}
+            },
+            "id": "node-update-status",
+            "name": "Update Run Status",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                650,
+                450
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "1",
+                    "name": "Shopify AI Postgres"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Error Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Error Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Error Info": {
+            "main": [
+                [
+                    {
+                        "node": "Log Error to DB",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Update Run Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": []
+}
