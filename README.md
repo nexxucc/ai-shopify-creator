@@ -1,8 +1,8 @@
-# 🚀 AI Shopify Creator
+# AI Shopify Creator
 
 An AI-powered tool that automatically generates complete Shopify stores — products, collections, pages, images, and theme customization — all from a single prompt.
 
-## ✨ Features
+## Features
 
 - **AI-Powered Store Generation** — Describe your niche and the AI creates everything
 - **Product Images** — Automatically sourced from Pexels based on product type
@@ -11,7 +11,7 @@ An AI-powered tool that automatically generates complete Shopify stores — prod
 - **Auto Cleanup** — Wipes old store data before each new generation
 - **Error Handling** — Retries, error logging, and graceful failure recovery
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
@@ -30,7 +30,7 @@ An AI-powered tool that automatically generates complete Shopify stores — prod
                                         └─────────────┘
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [Node.js 18+](https://nodejs.org/)
@@ -38,7 +38,7 @@ An AI-powered tool that automatically generates complete Shopify stores — prod
 - [Groq API Key](https://console.groq.com/keys) (free)
 - [Pexels API Key](https://www.pexels.com/api/new/) (free)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone & Configure
 
@@ -86,7 +86,7 @@ npm run build
 
 Open http://localhost:3000, fill in the form, and watch the AI build your store.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ai-shopify-creator/
@@ -120,7 +120,7 @@ ai-shopify-creator/
 └── .env.example               # Environment template
 ```
 
-## 🔑 Environment Variables
+## Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
@@ -132,7 +132,7 @@ ai-shopify-creator/
 | `N8N_USER/PASSWORD` | n8n login | ✅ |
 | `GEMINI_API_KEY` | Google Gemini (fallback) | Optional |
 
-## 🔄 How It Works
+## How It Works
 
 1. **User submits** niche, audience, budget tier via the dashboard
 2. **API cleans** existing Shopify store data
@@ -147,7 +147,7 @@ ai-shopify-creator/
 6. **API customizes theme**: Hero banner, sections, colors
 7. **Dashboard shows** real-time progress & completion
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -160,6 +160,6 @@ ai-shopify-creator/
 | Images | Pexels API |
 | Platform | Shopify Admin API |
 
-## 📄 License
+## License
 
 MIT
