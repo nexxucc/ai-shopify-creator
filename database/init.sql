@@ -3,6 +3,8 @@
 -- ============================================
 
 -- Store creation runs
+SELECT 'CREATE DATABASE n8n'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n')\gexec
 CREATE TABLE IF NOT EXISTS store_runs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMP DEFAULT NOW(),
@@ -57,8 +59,10 @@ CREATE TABLE IF NOT EXISTS error_log (
   id SERIAL PRIMARY KEY,
   run_id UUID,
   phase VARCHAR(100),
+  node_name VARCHAR(100),
   error_type VARCHAR(100),
   error_message TEXT,
+  error_stack TEXT,
   retry_count INTEGER DEFAULT 0,
   resolved BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()

@@ -27,16 +27,29 @@ app.use((req, res, next) => {
 });
 
 // ── Database ───────────────────────────────────────────
-const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: 5432,
-    database: 'shopify_ai',
-    user: process.env.POSTGRES_USER || 'shopify_ai',
-    password: process.env.POSTGRES_PASSWORD || 'changeme456',
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-});
+const pool = new Pool(
+  process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl:
+          process.env.DB_SSL === "true"
+            ? { rejectUnauthorized: false }
+            : undefined,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+    : {
+        host: process.env.DB_HOST || "localhost",
+        port: Number(process.env.DB_PORT || 5432),
+        database: process.env.POSTGRES_DB || "shopify_ai",
+        user: process.env.POSTGRES_USER || "shopify_ai",
+        password: process.env.POSTGRES_PASSWORD || "changeme456",
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      },
+);
 
 // ── Redis ──────────────────────────────────────────────
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {

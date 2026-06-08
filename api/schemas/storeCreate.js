@@ -6,7 +6,7 @@ const storeCreateSchema = z.object({
   budgetTier: z.enum(['budget', 'mid', 'premium', 'luxury']),
   uniqueSellingPoint: z.string().min(10).max(500),
   contactEmail: z.string().email(),
-  productCount: z.number().min(5).max(100).default(20)
+  productCount: z.number().min(3).max(100).default(5)
 });
 
 module.exports = { storeCreateSchema };
