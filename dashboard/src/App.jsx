@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BarChart3, Box, LayoutDashboard, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import CreateStoreForm from './components/CreateStoreForm';
 import ActiveRunBanner from './components/ActiveRunBanner';
@@ -59,27 +59,6 @@ export default function App() {
 
   return (
     <div className="obsidian-app">
-      <aside className="side-rail" aria-label="Primary navigation">
-        <div className="brand-stack">
-          <div className="brand-mark" aria-hidden="true">
-            <Box size={20} />
-          </div>
-          <div>
-            <h1>Shopify Creator</h1>
-          </div>
-        </div>
-
-        <nav className="nav-stack">
-          <a className="nav-item active" href="#dashboard">
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </a>
-          <a className="nav-item" href="#history">
-            <BarChart3 size={20} />
-            <span>History</span>
-          </a>
-        </nav>
-      </aside>
 
       <div className="workspace" id="dashboard">
         <Header stats={stats} />
@@ -105,9 +84,6 @@ export default function App() {
           <RunsTable runs={runs} loading={loading} />
         </main>
 
-        <footer className="footer">
-          <p>Built with n8n, Gemini/Groq, Postgres, and Shopify Admin API</p>
-        </footer>
       </div>
     </div>
   );

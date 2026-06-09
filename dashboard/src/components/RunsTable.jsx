@@ -1,4 +1,4 @@
-import { Check, Clock3, ExternalLink, MoreHorizontal, Package, RefreshCcw, X } from 'lucide-react';
+import { Check, Clock3, ExternalLink, Package, RefreshCcw, X } from 'lucide-react';
 import './RunsTable.css';
 
 function getStatusClass(status) {
@@ -46,7 +46,6 @@ export default function RunsTable({ runs, loading }) {
           <h2 id="history-heading">Generation History</h2>
           <p>Latest production executions</p>
         </div>
-        <MoreHorizontal size={21} />
       </div>
 
       {loading ? (

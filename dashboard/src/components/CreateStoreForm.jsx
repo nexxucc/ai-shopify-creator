@@ -34,7 +34,6 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
           <h2 id="create-store-heading">New Store Configuration</h2>
           <span className="heading-line" />
         </div>
-        <p><span>/</span> 01 Setup</p>
       </div>
 
       <form onSubmit={handleSubmit} className="creator-form">
