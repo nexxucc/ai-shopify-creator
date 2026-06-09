@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import { BarChart3, Box, LayoutDashboard, ShieldCheck, Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import CreateStoreForm from './components/CreateStoreForm';
 import ActiveRunBanner from './components/ActiveRunBanner';
@@ -17,9 +17,9 @@ export default function App() {
 
   const stats = {
     total: runs.length,
-    successful: runs.filter((r) => r.status === 'complete').length,
-    running: runs.filter((r) => r.status === 'running' || r.status === 'pending').length,
-    avgTime: runs.length > 0 ? '~5m' : '—',
+    successful: runs.filter((run) => run.status === 'complete').length,
+    running: runs.filter((run) => run.status === 'running' || run.status === 'pending').length,
+    failed: runs.filter((run) => run.status === 'error' || run.status === 'webhook_failed').length,
   };
 
   const handleCreate = useCallback(async (formData) => {
@@ -27,7 +27,7 @@ export default function App() {
     try {
       const data = await api.createStore(formData);
       setActiveRunId(data.runId);
-      showToast('Store creation started. Track progress below.');
+      showToast('Store generation started. Track the run in generation history.');
       refresh();
     } catch (err) {
       showToast(err.message, 'error');
@@ -37,9 +37,9 @@ export default function App() {
 
   const handleRunComplete = useCallback((status) => {
     if (status === 'complete') {
-      showToast('Store created successfully.');
+      showToast('Store generation completed.');
     } else {
-      showToast('Store creation failed. Check the run details.', 'error');
+      showToast('Store generation failed. Review the latest n8n execution.', 'error');
     }
     setActiveRunId(null);
     setCreating(false);
@@ -58,48 +58,73 @@ export default function App() {
   }, [showToast, refresh]);
 
   return (
-    <div className="app">
-      <Header stats={stats} />
-
-      <main className="main-content">
-        <section className="hero-shell fade-in">
-          <div className="hero-copy">
-            <p className="eyebrow">Shopify automation workspace</p>
-            <h2>Generate a focused storefront from one structured brief.</h2>
-            <p>
-              Create products, collections, copy, pricing, and setup tasks through a controlled n8n pipeline connected to your Shopify development store.
-            </p>
+    <div className="obsidian-app">
+      <aside className="side-rail" aria-label="Primary navigation">
+        <div className="brand-stack">
+          <div className="brand-mark" aria-hidden="true">
+            <Box size={20} />
           </div>
-          <div className="hero-panel" aria-label="Deployment status">
-            <span className="status-dot" />
+          <div>
+            <h1>Shopify Creator</h1>
+            <p>v1.0.4</p>
+          </div>
+        </div>
+
+        <nav className="nav-stack">
+          <a className="nav-item active" href="#dashboard">
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </a>
+          <a className="nav-item" href="#history">
+            <BarChart3 size={20} />
+            <span>History</span>
+          </a>
+        </nav>
+
+        <div className="rail-footer">
+          <div className="rail-status">
+            <ShieldCheck size={18} />
             <div>
-              <strong>Production pipeline</strong>
-              <span>Railway, n8n, Postgres, Shopify Admin API</span>
+              <span>Production</span>
+              <strong>Pipeline online</strong>
             </div>
           </div>
-        </section>
+        </div>
+      </aside>
 
-        <CreateStoreForm onSubmit={handleCreate} disabled={creating} />
+      <div className="workspace" id="dashboard">
+        <Header stats={stats} />
 
-        {activeRunId && (
-          <ActiveRunBanner runId={activeRunId} onComplete={handleRunComplete} />
-        )}
+        <main className="workspace-main">
+          <section className="configuration-column" aria-label="Store configuration">
+            <CreateStoreForm onSubmit={handleCreate} disabled={creating} />
 
-        <RunsTable runs={runs} loading={loading} />
+            {activeRunId && (
+              <ActiveRunBanner runId={activeRunId} onComplete={handleRunComplete} />
+            )}
 
-        {runs.length > 0 && (
-          <div className="cleanup-section">
-            <button className="btn-cleanup" onClick={handleCleanup}>
-              <Trash2 size={15} />
-              Clean up store and reset database
-            </button>
+            {runs.length > 0 && (
+              <div className="cleanup-section">
+                <button className="btn-cleanup" onClick={handleCleanup}>
+                  <Trash2 size={15} />
+                  Clean up store and reset database
+                </button>
+              </div>
+            )}
+          </section>
+
+          <RunsTable runs={runs} loading={loading} />
+        </main>
+
+        <footer className="footer">
+          <p>Built with n8n, Gemini/Groq, Postgres, and Shopify Admin API</p>
+          <div>
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>API Documentation</span>
           </div>
-        )}
-      </main>
-
-      <footer className="footer">
-        <p>Built with n8n, Gemini/Groq, Postgres, and Shopify Admin API</p>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

@@ -1,146 +1,92 @@
 .active-run {
-  background: linear-gradient(180deg, rgba(22, 25, 40, 0.90), rgba(12, 15, 26, 0.9));
-  border: 1px solid rgba(124, 92, 255, 0.48);
-  border-radius: var(--radius-lg);
+  margin-top: 28px;
+  border: 1px solid var(--accent);
+  background: rgba(212, 197, 168, 0.04);
   padding: 22px;
-  margin-bottom: 22px;
-  box-shadow: var(--shadow-glow);
-  backdrop-filter: blur(18px);
 }
 
-.active-run.error {
-  border-color: rgba(255, 107, 122, 0.52);
-  box-shadow: 0 0 34px var(--error-glow);
+.active-run.failed {
+  border-color: var(--danger);
+  background: rgba(255, 141, 130, 0.05);
 }
 
-.active-run.complete {
-  border-color: rgba(40, 215, 194, 0.48);
-  box-shadow: 0 0 34px var(--success-glow);
+.active-run.completed {
+  border-color: var(--text-soft);
 }
 
-.active-run-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
-  margin-bottom: 18px;
+.active-run-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
 }
 
-.active-run-title {
-  display: flex;
-  gap: 13px;
-  align-items: flex-start;
+.active-run-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  color: var(--accent);
 }
 
-.active-icon {
-  color: var(--accent-light);
-  flex: 0 0 auto;
-  margin-top: 2px;
+.active-run.failed .active-run-icon {
+  color: var(--danger);
 }
 
-.active-icon.success {
-  color: var(--success);
+.active-run.completed .active-run-icon {
+  color: var(--text);
 }
 
-.active-icon.error {
-  color: var(--error);
+.active-run span {
+  display: block;
+  color: var(--text-muted);
+  font-family: 'Hanken Grotesk', Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.active-icon.spinning {
-  animation: spin 1.6s linear infinite;
+.active-run h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
 }
 
-.active-run-title h3 {
-  font-size: 16px;
-  letter-spacing: -0.025em;
-  margin-bottom: 5px;
+.active-run strong {
+  color: var(--accent-strong);
+  font-family: 'Hanken Grotesk', Inter, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.active-run-title p {
-  color: var(--text-secondary);
+.run-progress-line {
+  height: 2px;
+  margin: 20px 0 12px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.run-progress-line span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 280ms ease;
+}
+
+.active-run.failed .run-progress-line span {
+  background: var(--danger);
+}
+
+.active-run p {
+  margin: 0;
+  color: var(--text-soft);
   font-size: 13px;
 }
 
-.run-id-badge {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 11px;
-  color: var(--text-secondary);
-  background: rgba(7, 8, 13, 0.72);
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(7, 8, 13, 0.82);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.10);
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--success));
-  border-radius: 999px;
-  transition: width 0.6s ease;
-  position: relative;
-}
-
-.progress-bar.error .progress-fill {
-  background: linear-gradient(90deg, var(--error), #ff9aa5);
-}
-
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2.2s linear infinite;
-}
-
-.phase-track {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.phase-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  color: var(--text-muted);
-  background: rgba(7, 8, 13, 0.42);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 11px;
-  line-height: 1;
-}
-
-.phase-pill span {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.phase-pill.active {
-  color: var(--accent-light);
-  border-color: rgba(124, 92, 255, 0.46);
-  background: var(--accent-subtle);
-}
-
-.phase-pill.done {
-  color: var(--success);
-}
-
-@media (max-width: 680px) {
-  .active-run-header {
-    flex-direction: column;
-  }
+.spin {
+  animation: spin 900ms linear infinite;
 }

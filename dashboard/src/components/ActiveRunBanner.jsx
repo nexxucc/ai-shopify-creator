@@ -1,20 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { AlertCircle, CheckCircle2, CircleDotDashed } from 'lucide-react';
+import { AlertTriangle, Check, Loader2 } from 'lucide-react';
 import { useRunStatus } from '../hooks/useRuns';
 import './ActiveRunBanner.css';
 
 const PHASE_LABELS = {
   queued: 'Queued',
   architect: 'Planning storefront structure',
-  researcher: 'Researching product direction',
+  researcher: 'Researching market direction',
   content: 'Writing product and page content',
-  pricing: 'Preparing pricing strategy',
+  pricing: 'Preparing pricing model',
   theme: 'Preparing theme direction',
-  building: 'Creating assets in Shopify',
+  building: 'Creating Shopify assets',
   done: 'Complete',
 };
-
-const PHASES = ['architect', 'researcher', 'content', 'pricing', 'theme', 'building'];
 
 export default function ActiveRunBanner({ runId, onComplete }) {
   const status = useRunStatus(runId);
@@ -37,39 +35,23 @@ export default function ActiveRunBanner({ runId, onComplete }) {
   if (!status) return null;
 
   return (
-    <section className={`active-run slide-down ${isError ? 'error' : ''} ${status.status === 'complete' ? 'complete' : ''}`}>
-      <div className="active-run-header">
-        <div className="active-run-title">
-          {!isFinished && <CircleDotDashed size={20} className="active-icon spinning" />}
-          {isError && <AlertCircle size={20} className="active-icon error" />}
-          {status.status === 'complete' && <CheckCircle2 size={20} className="active-icon success" />}
-          <div>
-            <h3>{isError ? 'Build failed' : status.status === 'complete' ? 'Store created' : 'Store build in progress'}</h3>
-            <p>{isError ? (status.errorMessage || 'Open the n8n execution for details.') : phaseLabel}</p>
-          </div>
+    <section className={`active-run ${isError ? 'failed' : ''} ${status.status === 'complete' ? 'completed' : ''}`}>
+      <div className="active-run-heading">
+        <div className="active-run-icon" aria-hidden="true">
+          {isError ? <AlertTriangle size={17} /> : status.status === 'complete' ? <Check size={17} /> : <Loader2 size={17} className="spin" />}
         </div>
-        <span className="run-id-badge">{runId.substring(0, 8)}</span>
+        <div>
+          <span>Active run</span>
+          <h3>{isError ? 'Generation failed' : status.status === 'complete' ? 'Generation complete' : phaseLabel}</h3>
+        </div>
+        <strong>{runId.substring(0, 8)}</strong>
       </div>
 
-      <div className={`progress-bar ${isError ? 'error' : ''}`}>
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
+      <div className="run-progress-line" aria-hidden="true">
+        <span style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="phase-track" aria-label="Build phases">
-        {PHASES.map((item) => {
-          const currentIndex = PHASES.indexOf(phase);
-          const itemIndex = PHASES.indexOf(item);
-          const isActive = item === phase;
-          const isDone = status.status === 'complete' || (currentIndex >= 0 && itemIndex < currentIndex);
-
-          return (
-            <div key={item} className={`phase-pill ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
-              <span />
-              {PHASE_LABELS[item].replace('Preparing ', '').replace('Creating assets in ', '')}
-            </div>
-          );
-        })}
-      </div>
+      <p>{isError ? (status.errorMessage || 'Open the failed n8n execution for details.') : `${progress}% complete`}</p>
     </section>
   );
 }

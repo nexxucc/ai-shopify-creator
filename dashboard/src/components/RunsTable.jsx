@@ -1,94 +1,89 @@
-import { ExternalLink, Package, RefreshCcw } from 'lucide-react';
+import { Check, Clock3, ExternalLink, MoreHorizontal, Package, RefreshCcw, X } from 'lucide-react';
 import './RunsTable.css';
 
-function StatusBadge({ status }) {
+function getStatusClass(status) {
+  if (status === 'complete') return 'completed';
+  if (status === 'error' || status === 'webhook_failed') return 'failed';
+  if (status === 'running' || status === 'pending') return 'processing';
+  return 'queued';
+}
+
+function getStatusLabel(status) {
   const labels = {
-    complete: 'Complete',
-    running: 'Running',
-    pending: 'Pending',
-    error: 'Error',
+    complete: 'Completed',
+    running: 'Processing',
+    pending: 'Queued',
+    error: 'Failed',
     webhook_failed: 'Failed',
   };
 
-  return (
-    <span className={`status-badge ${status}`}>
-      <span className="status-dot-small" />
-      {labels[status] || status}
-    </span>
-  );
+  return labels[status] || 'Queued';
 }
 
-function formatDate(d) {
-  if (!d) return '—';
-  const date = new Date(d);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ', ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+function StatusIcon({ status }) {
+  const className = getStatusClass(status);
+
+  if (className === 'completed') return <Check size={13} />;
+  if (className === 'failed') return <X size={13} />;
+  if (className === 'processing') return <Clock3 size={13} />;
+  return <Package size={13} />;
+}
+
+function formatDetail(run) {
+  if (run.status === 'complete') return run.store_url ? 'Store ready for review.' : 'Generation completed.';
+  if (run.status === 'error' || run.status === 'webhook_failed') return run.error_message || 'Execution failed. Review n8n logs.';
+  if (run.current_phase) return `${run.current_phase.replaceAll('_', ' ')}...`;
+  return 'Waiting for workflow update...';
 }
 
 export default function RunsTable({ runs, loading }) {
-  if (loading) {
-    return (
-      <section className="runs-section">
-        <h3 className="section-title"><Package size={18} /> Recent runs</h3>
-        <div className="loading-skeleton">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="skeleton-row" />
-          ))}
-        </div>
-      </section>
-    );
-  }
+  const visibleRuns = runs.slice(0, 7);
 
   return (
-    <section className="runs-section fade-in">
-      <div className="section-header">
+    <aside className="history-panel fade-in" id="history" aria-labelledby="history-heading">
+      <div className="history-header">
         <div>
-          <h3 className="section-title"><Package size={18} /> Recent runs</h3>
-          <p>Latest production workflow attempts and their current phase.</p>
+          <h2 id="history-heading">Generation History</h2>
+          <p>Latest production executions</p>
         </div>
-        <span className="run-count">{runs.length} total</span>
+        <MoreHorizontal size={21} />
       </div>
 
-      {runs.length === 0 ? (
-        <div className="empty-state">
-          <Package size={34} />
-          <p>No runs yet</p>
-          <span>Create your first storefront brief above.</span>
+      {loading ? (
+        <div className="timeline-list loading-list">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="timeline-item skeleton-item" />
+          ))}
+        </div>
+      ) : visibleRuns.length === 0 ? (
+        <div className="history-empty">
+          <Package size={28} />
+          <p>No generations yet</p>
+          <span>Submit a store configuration to start the first run.</span>
         </div>
       ) : (
-        <div className="runs-list">
-          {runs.map((run) => {
-            const progress = run.progress || 0;
+        <div className="timeline-list">
+          {visibleRuns.map((run) => {
+            const statusClass = getStatusClass(run.status);
+            const statusLabel = getStatusLabel(run.status);
+
             return (
-              <article key={run.id} className="run-row">
-                <div className="run-row-main">
-                  <div className="run-heading">
-                    <div>
-                      <h4>{run.niche || 'Untitled run'}</h4>
-                      <span>{run.target_audience || 'No audience provided'}</span>
-                    </div>
-                    <span className="run-id">{run.id.substring(0, 8)}</span>
-                  </div>
-
-                  <div className="run-meta">
-                    <StatusBadge status={run.status} />
-                    <span>{progress}%</span>
-                    <span>{run.current_phase || 'queued'}</span>
-                  </div>
-
-                  <div className="mini-progress" aria-hidden="true">
-                    <span style={{ width: `${progress}%` }} />
-                  </div>
+              <article key={run.id} className={`timeline-item ${statusClass}`}>
+                <div className="timeline-marker">
+                  <StatusIcon status={run.status} />
                 </div>
-
-                <div className="run-row-side">
-                  <span className="run-date">{formatDate(run.created_at)}</span>
+                <div className="timeline-content">
+                  <span className="timeline-status">{statusLabel}</span>
+                  <h3>{run.niche || 'Untitled store'}</h3>
+                  <p>{formatDetail(run)}</p>
                   {run.store_url ? (
-                    <a href={run.store_url.startsWith('http') ? run.store_url : `https://${run.store_url}`} target="_blank" rel="noopener noreferrer" className="store-link">
-                      Open store <ExternalLink size={13} />
+                    <a href={run.store_url.startsWith('http') ? run.store_url : `https://${run.store_url}`} target="_blank" rel="noopener noreferrer">
+                      View store <ExternalLink size={12} />
                     </a>
                   ) : (
-                    <span className="store-link muted"><RefreshCcw size={13} /> Waiting</span>
+                    <span className="waiting-link">
+                      <RefreshCcw size={12} /> {run.progress || 0}% complete
+                    </span>
                   )}
                 </div>
               </article>
@@ -96,6 +91,6 @@ export default function RunsTable({ runs, loading }) {
           })}
         </div>
       )}
-    </section>
+    </aside>
   );
 }
