@@ -1,17 +1,18 @@
-import { Package, ExternalLink } from 'lucide-react';
+import { ExternalLink, Package, RefreshCcw } from 'lucide-react';
 import './RunsTable.css';
 
 function StatusBadge({ status }) {
   const labels = {
-    complete: '✓ Complete',
-    running: '● Running',
-    pending: '○ Pending',
-    error: '✕ Error',
-    webhook_failed: '✕ Failed',
+    complete: 'Complete',
+    running: 'Running',
+    pending: 'Pending',
+    error: 'Error',
+    webhook_failed: 'Failed',
   };
 
   return (
     <span className={`status-badge ${status}`}>
+      <span className="status-dot-small" />
       {labels[status] || status}
     </span>
   );
@@ -27,55 +28,74 @@ function formatDate(d) {
 export default function RunsTable({ runs, loading }) {
   if (loading) {
     return (
-      <div className="runs-section">
-        <h3 className="section-title"><Package size={18} /> Recent Runs</h3>
+      <section className="runs-section">
+        <h3 className="section-title"><Package size={18} /> Recent runs</h3>
         <div className="loading-skeleton">
           {[1, 2, 3].map((i) => (
             <div key={i} className="skeleton-row" />
           ))}
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="runs-section fade-in">
+    <section className="runs-section fade-in">
       <div className="section-header">
-        <h3 className="section-title"><Package size={18} /> Recent Runs</h3>
+        <div>
+          <h3 className="section-title"><Package size={18} /> Recent runs</h3>
+          <p>Latest production workflow attempts and their current phase.</p>
+        </div>
         <span className="run-count">{runs.length} total</span>
       </div>
 
       {runs.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <Package size={34} />
           <p>No runs yet</p>
-          <span>Create your first AI store above!</span>
+          <span>Create your first storefront brief above.</span>
         </div>
       ) : (
         <div className="runs-list">
-          {runs.map((run) => (
-            <div key={run.id} className="run-row">
-              <div className="run-row-main">
-                <div className="run-niche">{run.niche || '—'}</div>
-                <div className="run-meta">
-                  <StatusBadge status={run.status} />
-                  <span className="run-progress">{run.progress || 0}%</span>
-                  <span className="run-phase">{run.current_phase || '—'}</span>
+          {runs.map((run) => {
+            const progress = run.progress || 0;
+            return (
+              <article key={run.id} className="run-row">
+                <div className="run-row-main">
+                  <div className="run-heading">
+                    <div>
+                      <h4>{run.niche || 'Untitled run'}</h4>
+                      <span>{run.target_audience || 'No audience provided'}</span>
+                    </div>
+                    <span className="run-id">{run.id.substring(0, 8)}</span>
+                  </div>
+
+                  <div className="run-meta">
+                    <StatusBadge status={run.status} />
+                    <span>{progress}%</span>
+                    <span>{run.current_phase || 'queued'}</span>
+                  </div>
+
+                  <div className="mini-progress" aria-hidden="true">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div className="run-row-side">
-                <span className="run-date">{formatDate(run.created_at)}</span>
-                <span className="run-id">{run.id.substring(0, 8)}</span>
-                {run.store_url && (
-                  <a href={run.store_url.startsWith('http') ? run.store_url : `https://${run.store_url}`} target="_blank" rel="noopener noreferrer" className="store-link">
-                    <ExternalLink size={13} />
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
+
+                <div className="run-row-side">
+                  <span className="run-date">{formatDate(run.created_at)}</span>
+                  {run.store_url ? (
+                    <a href={run.store_url.startsWith('http') ? run.store_url : `https://${run.store_url}`} target="_blank" rel="noopener noreferrer" className="store-link">
+                      Open store <ExternalLink size={13} />
+                    </a>
+                  ) : (
+                    <span className="store-link muted"><RefreshCcw size={13} /> Waiting</span>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

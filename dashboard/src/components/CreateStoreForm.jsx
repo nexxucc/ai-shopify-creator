@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import './CreateStoreForm.css';
 
+const INITIAL_FORM = {
+  niche: '',
+  targetAudience: '',
+  budgetTier: 'mid',
+  productCount: 3,
+  uniqueSellingPoint: '',
+  contactEmail: '',
+};
+
 export default function CreateStoreForm({ onSubmit, disabled }) {
-  const [form, setForm] = useState({
-    niche: '',
-    targetAudience: '',
-    budgetTier: 'mid',
-    productCount: 5,
-    uniqueSellingPoint: '',
-    contactEmail: '',
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: name === 'productCount' ? parseInt(value) : value }));
+    setForm((prev) => ({ ...prev, [name]: name === 'productCount' ? Number.parseInt(value, 10) : value }));
   };
 
   const handleSubmit = (e) => {
@@ -23,23 +25,29 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
   };
 
   return (
-    <div className="create-card fade-in">
-      <div className="create-card-gradient" />
+    <section className="create-card fade-in" aria-labelledby="create-store-heading">
+      <div className="create-card-glow" />
       <div className="create-card-header">
-        <div>
-          <h2><Sparkles size={20} /> Create a New AI Store</h2>
-          <p>Enter your business niche and let AI build your complete Shopify store — products, collections, pages, and SEO content.</p>
+        <div className="create-title-block">
+          <div className="section-icon" aria-hidden="true">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <p className="section-kicker">New generation</p>
+            <h2 id="create-store-heading">Create a storefront brief</h2>
+            <p>Keep the prompt narrow while rate limits are active. Three products is the safest test setting.</p>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="form-grid">
         <div className="form-group">
-          <label htmlFor="niche">Business Niche *</label>
+          <label htmlFor="niche">Business niche</label>
           <input
             id="niche"
             name="niche"
             type="text"
-            placeholder="e.g., eco-friendly yoga accessories"
+            placeholder="fitness accessories"
             value={form.niche}
             onChange={handleChange}
             required
@@ -48,12 +56,12 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="targetAudience">Target Audience *</label>
+          <label htmlFor="targetAudience">Target audience</label>
           <input
             id="targetAudience"
             name="targetAudience"
             type="text"
-            placeholder="e.g., Women 25-45 into wellness"
+            placeholder="college students who train at home"
             value={form.targetAudience}
             onChange={handleChange}
             required
@@ -62,31 +70,31 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="budgetTier">Budget Tier</label>
+          <label htmlFor="budgetTier">Budget tier</label>
           <select id="budgetTier" name="budgetTier" value={form.budgetTier} onChange={handleChange} disabled={disabled}>
-            <option value="budget">💰 Budget ($10–50)</option>
-            <option value="mid">💎 Mid-Range ($30–150)</option>
-            <option value="premium">👑 Premium ($80–400)</option>
-            <option value="luxury">✨ Luxury ($200+)</option>
+            <option value="budget">Budget ($10-50)</option>
+            <option value="mid">Mid-range ($30-150)</option>
+            <option value="premium">Premium ($80-400)</option>
+            <option value="luxury">Luxury ($200+)</option>
           </select>
         </div>
 
         <div className="form-group">
-          <label htmlFor="productCount">Product Count</label>
+          <label htmlFor="productCount">Product count</label>
           <select id="productCount" name="productCount" value={form.productCount} onChange={handleChange} disabled={disabled}>
-            <option value={3}>3 Products</option>
-            <option value={5}>5 Products</option>
-            <option value={8}>8 Products</option>
-            <option value={10}>10 Products</option>
+            <option value={3}>3 products</option>
+            <option value={5}>5 products</option>
+            <option value={8}>8 products</option>
+            <option value={10}>10 products</option>
           </select>
         </div>
 
         <div className="form-group full">
-          <label htmlFor="uniqueSellingPoint">Unique Selling Point *</label>
+          <label htmlFor="uniqueSellingPoint">Unique selling point</label>
           <textarea
             id="uniqueSellingPoint"
             name="uniqueSellingPoint"
-            placeholder="What makes your store unique? This helps AI create tailored content..."
+            placeholder="Compact affordable gear for small rooms, hostel spaces, and quick daily routines."
             value={form.uniqueSellingPoint}
             onChange={handleChange}
             required
@@ -95,7 +103,7 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="contactEmail">Contact Email *</label>
+          <label htmlFor="contactEmail">Contact email</label>
           <input
             id="contactEmail"
             name="contactEmail"
@@ -108,22 +116,23 @@ export default function CreateStoreForm({ onSubmit, disabled }) {
           />
         </div>
 
-        <div className="form-group" style={{ alignSelf: 'end' }}>
-          <button type="submit" className={`btn-create ${disabled ? 'loading' : ''}`} disabled={disabled}>
+        <div className="form-submit">
+          <button type="submit" className="btn-create" disabled={disabled}>
             {disabled ? (
               <>
                 <Loader2 size={18} className="spinner-icon" />
-                <span>Creating Store...</span>
+                <span>Creating store</span>
               </>
             ) : (
               <>
-                <Sparkles size={18} />
-                <span>Create Store with AI</span>
+                <span>Create store</span>
+                <ArrowRight size={18} />
               </>
             )}
           </button>
+          <p>Submits one production n8n run. Avoid repeated retries while provider rate limits are active.</p>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

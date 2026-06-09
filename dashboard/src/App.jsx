@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import CreateStoreForm from './components/CreateStoreForm';
 import ActiveRunBanner from './components/ActiveRunBanner';
@@ -17,6 +18,7 @@ export default function App() {
   const stats = {
     total: runs.length,
     successful: runs.filter((r) => r.status === 'complete').length,
+    running: runs.filter((r) => r.status === 'running' || r.status === 'pending').length,
     avgTime: runs.length > 0 ? '~5m' : '—',
   };
 
@@ -25,7 +27,7 @@ export default function App() {
     try {
       const data = await api.createStore(formData);
       setActiveRunId(data.runId);
-      showToast('🚀 Store creation started!');
+      showToast('Store creation started. Track progress below.');
       refresh();
     } catch (err) {
       showToast(err.message, 'error');
@@ -35,9 +37,9 @@ export default function App() {
 
   const handleRunComplete = useCallback((status) => {
     if (status === 'complete') {
-      showToast('🎉 Store created successfully!');
+      showToast('Store created successfully.');
     } else {
-      showToast('❌ Store creation failed. Check the run details.', 'error');
+      showToast('Store creation failed. Check the run details.', 'error');
     }
     setActiveRunId(null);
     setCreating(false);
@@ -45,10 +47,10 @@ export default function App() {
   }, [showToast, refresh]);
 
   const handleCleanup = useCallback(async () => {
-    if (!confirm('This will delete ALL products, collections, pages from Shopify and clear the database. Continue?')) return;
+    if (!confirm('This will delete all Shopify products, collections, pages, and clear the run database. Continue?')) return;
     try {
       const result = await api.cleanup();
-      showToast(`🧹 Cleaned: ${result.deleted.products} products, ${result.deleted.collections} collections, ${result.deleted.pages} pages`);
+      showToast(`Cleaned ${result.deleted.products} products, ${result.deleted.collections} collections, and ${result.deleted.pages} pages.`);
       refresh();
     } catch (err) {
       showToast('Cleanup failed: ' + err.message, 'error');
@@ -60,6 +62,23 @@ export default function App() {
       <Header stats={stats} />
 
       <main className="main-content">
+        <section className="hero-shell fade-in">
+          <div className="hero-copy">
+            <p className="eyebrow">Shopify automation workspace</p>
+            <h2>Generate a focused storefront from one structured brief.</h2>
+            <p>
+              Create products, collections, copy, pricing, and setup tasks through a controlled n8n pipeline connected to your Shopify development store.
+            </p>
+          </div>
+          <div className="hero-panel" aria-label="Deployment status">
+            <span className="status-dot" />
+            <div>
+              <strong>Production pipeline</strong>
+              <span>Railway, n8n, Postgres, Shopify Admin API</span>
+            </div>
+          </div>
+        </section>
+
         <CreateStoreForm onSubmit={handleCreate} disabled={creating} />
 
         {activeRunId && (
@@ -71,14 +90,15 @@ export default function App() {
         {runs.length > 0 && (
           <div className="cleanup-section">
             <button className="btn-cleanup" onClick={handleCleanup}>
-              🧹 Clean Up Store & Reset Database
+              <Trash2 size={15} />
+              Clean up store and reset database
             </button>
           </div>
         )}
       </main>
 
       <footer className="footer">
-        <p>Built with Gemini AI + n8n + Shopify API</p>
+        <p>Built with n8n, Gemini/Groq, Postgres, and Shopify Admin API</p>
       </footer>
     </div>
   );
