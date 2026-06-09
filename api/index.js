@@ -11,7 +11,22 @@ const app = express();
 const PORT = process.env.API_PORT || 3000;
 
 // ── Middleware ──────────────────────────────────────────
-app.use(helmet());
+const frameAncestors = (
+  process.env.FRAME_ANCESTORS ||
+  "'self' http://localhost:5173 http://localhost:4173 https://nexxucc.github.io"
+).split(" ");
+
+app.use(
+  helmet({
+    frameguard: false,
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "frame-ancestors": frameAncestors,
+      },
+    },
+  }),
+);
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
@@ -132,7 +147,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // ── Start Server ───────────────────────────────────────
 app.listen(PORT, () => {
-    console.log(`\n🚀 AI Shopify Creator API running on http://localhost:${PORT}`);
+    console.log(`\nAI Shopify Creator API running on http://localhost:${PORT}`);
     console.log(`   Health: http://localhost:${PORT}/health`);
     console.log(`   Stores: http://localhost:${PORT}/api/stores`);
     console.log('');
