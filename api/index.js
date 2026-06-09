@@ -11,7 +11,22 @@ const app = express();
 const PORT = process.env.API_PORT || 3000;
 
 // ── Middleware ──────────────────────────────────────────
-app.use(helmet());
+const frameAncestors = (
+  process.env.FRAME_ANCESTORS ||
+  "'self' http://localhost:5173 http://localhost:4173 https://nexxucc.github.io"
+).split(" ");
+
+app.use(
+  helmet({
+    frameguard: false,
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "frame-ancestors": frameAncestors,
+      },
+    },
+  }),
+);
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
@@ -27,16 +42,29 @@ app.use((req, res, next) => {
 });
 
 // ── Database ───────────────────────────────────────────
-const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: 5432,
-    database: 'shopify_ai',
-    user: process.env.POSTGRES_USER || 'shopify_ai',
-    password: process.env.POSTGRES_PASSWORD || 'changeme456',
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-});
+const pool = new Pool(
+  process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl:
+          process.env.DB_SSL === "true"
+            ? { rejectUnauthorized: false }
+            : undefined,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+    : {
+        host: process.env.DB_HOST || "localhost",
+        port: Number(process.env.DB_PORT || 5432),
+        database: process.env.POSTGRES_DB || "shopify_ai",
+        user: process.env.POSTGRES_USER || "shopify_ai",
+        password: process.env.POSTGRES_PASSWORD || "changeme456",
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      },
+);
 
 // ── Redis ──────────────────────────────────────────────
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
@@ -119,7 +147,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // ── Start Server ───────────────────────────────────────
 app.listen(PORT, () => {
-    console.log(`\n🚀 AI Shopify Creator API running on http://localhost:${PORT}`);
+    console.log(`\nAI Shopify Creator API running on http://localhost:${PORT}`);
     console.log(`   Health: http://localhost:${PORT}/health`);
     console.log(`   Stores: http://localhost:${PORT}/api/stores`);
     console.log('');

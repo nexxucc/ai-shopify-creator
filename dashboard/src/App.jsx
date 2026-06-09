@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import CreateStoreForm from './components/CreateStoreForm';
 import ActiveRunBanner from './components/ActiveRunBanner';
@@ -16,8 +17,9 @@ export default function App() {
 
   const stats = {
     total: runs.length,
-    successful: runs.filter((r) => r.status === 'complete').length,
-    avgTime: runs.length > 0 ? '~5m' : '—',
+    successful: runs.filter((run) => run.status === 'complete').length,
+    running: runs.filter((run) => run.status === 'running' || run.status === 'pending').length,
+    failed: runs.filter((run) => run.status === 'error' || run.status === 'webhook_failed').length,
   };
 
   const handleCreate = useCallback(async (formData) => {
@@ -25,7 +27,7 @@ export default function App() {
     try {
       const data = await api.createStore(formData);
       setActiveRunId(data.runId);
-      showToast('🚀 Store creation started!');
+      showToast('Store generation started. Track the run in generation history.');
       refresh();
     } catch (err) {
       showToast(err.message, 'error');
@@ -35,9 +37,9 @@ export default function App() {
 
   const handleRunComplete = useCallback((status) => {
     if (status === 'complete') {
-      showToast('🎉 Store created successfully!');
+      showToast('Store generation completed.');
     } else {
-      showToast('❌ Store creation failed. Check the run details.', 'error');
+      showToast('Store generation failed. Review the latest n8n execution.', 'error');
     }
     setActiveRunId(null);
     setCreating(false);
@@ -45,10 +47,10 @@ export default function App() {
   }, [showToast, refresh]);
 
   const handleCleanup = useCallback(async () => {
-    if (!confirm('This will delete ALL products, collections, pages from Shopify and clear the database. Continue?')) return;
+    if (!confirm('This will delete all Shopify products, collections, pages, and clear the run database. Continue?')) return;
     try {
       const result = await api.cleanup();
-      showToast(`🧹 Cleaned: ${result.deleted.products} products, ${result.deleted.collections} collections, ${result.deleted.pages} pages`);
+      showToast(`Cleaned ${result.deleted.products} products, ${result.deleted.collections} collections, and ${result.deleted.pages} pages.`);
       refresh();
     } catch (err) {
       showToast('Cleanup failed: ' + err.message, 'error');
@@ -56,30 +58,33 @@ export default function App() {
   }, [showToast, refresh]);
 
   return (
-    <div className="app">
-      <Header stats={stats} />
+    <div className="obsidian-app">
 
-      <main className="main-content">
-        <CreateStoreForm onSubmit={handleCreate} disabled={creating} />
+      <div className="workspace" id="dashboard">
+        <Header stats={stats} />
 
-        {activeRunId && (
-          <ActiveRunBanner runId={activeRunId} onComplete={handleRunComplete} />
-        )}
+        <main className="workspace-main">
+          <section className="configuration-column" aria-label="Store configuration">
+            <CreateStoreForm onSubmit={handleCreate} disabled={creating} />
 
-        <RunsTable runs={runs} loading={loading} />
+            {activeRunId && (
+              <ActiveRunBanner runId={activeRunId} onComplete={handleRunComplete} />
+            )}
 
-        {runs.length > 0 && (
-          <div className="cleanup-section">
-            <button className="btn-cleanup" onClick={handleCleanup}>
-              🧹 Clean Up Store & Reset Database
-            </button>
-          </div>
-        )}
-      </main>
+            {runs.length > 0 && (
+              <div className="cleanup-section">
+                <button className="btn-cleanup" onClick={handleCleanup}>
+                  <Trash2 size={15} />
+                  Clean up store and reset database
+                </button>
+              </div>
+            )}
+          </section>
 
-      <footer className="footer">
-        <p>Built with Gemini AI + n8n + Shopify API</p>
-      </footer>
+          <RunsTable runs={runs} loading={loading} />
+        </main>
+
+      </div>
     </div>
   );
 }

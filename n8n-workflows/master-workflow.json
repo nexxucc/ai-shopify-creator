@@ -642,7 +642,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "http://host.docker.internal:3000/api/theme/customize",
+                "url": "={{ $env.API_BASE_URL }}/api/theme/customize",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [

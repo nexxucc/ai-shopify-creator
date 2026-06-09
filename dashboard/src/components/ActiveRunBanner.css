@@ -1,128 +1,92 @@
 .active-run {
-    background: var(--bg-card);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 0 20px var(--accent-glow);
+  margin-top: 28px;
+  border: 1px solid var(--accent);
+  background: rgba(212, 197, 168, 0.04);
+  padding: 22px;
 }
 
-.active-run.error {
-    border-color: var(--error);
-    box-shadow: 0 0 20px var(--error-glow);
+.active-run.failed {
+  border-color: var(--danger);
+  background: rgba(255, 141, 130, 0.05);
 }
 
-.active-run.complete {
-    border-color: var(--success);
-    box-shadow: 0 0 20px var(--success-glow);
+.active-run.completed {
+  border-color: var(--text-soft);
 }
 
-.active-run-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
+.active-run-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
 }
 
-.active-run-title {
-    font-weight: 600;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.active-run-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  color: var(--accent);
 }
 
-.pulse-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--success);
-    border-radius: 50%;
-    animation: pulse 1.5s ease-in-out infinite;
-    flex-shrink: 0;
+.active-run.failed .active-run-icon {
+  color: var(--danger);
 }
 
-.error-icon {
-    width: 20px;
-    height: 20px;
-    background: var(--error);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: white;
+.active-run.completed .active-run-icon {
+  color: var(--text);
 }
 
-.success-icon {
-    width: 20px;
-    height: 20px;
-    background: var(--success);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--bg-primary);
+.active-run span {
+  display: block;
+  color: var(--text-muted);
+  font-family: 'Hanken Grotesk', Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.run-id-badge {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--bg-primary);
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
+.active-run h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
 }
 
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background: var(--bg-primary);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 10px;
+.active-run strong {
+  color: var(--accent-strong);
+  font-family: 'Hanken Grotesk', Inter, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.progress-bar.error .progress-fill {
-    background: linear-gradient(90deg, var(--error), #e55039);
+.run-progress-line {
+  height: 2px;
+  margin: 20px 0 12px;
+  background: var(--line);
+  overflow: hidden;
 }
 
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--success));
-    border-radius: 3px;
-    transition: width 0.6s ease;
-    position: relative;
+.run-progress-line span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 280ms ease;
 }
 
-.progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
+.active-run.failed .run-progress-line span {
+  background: var(--danger);
 }
 
-.progress-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.active-run p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
-.phase-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.progress-pct {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent-light);
+.spin {
+  animation: spin 900ms linear infinite;
 }
