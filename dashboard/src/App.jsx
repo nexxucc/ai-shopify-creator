@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BarChart3, Box, LayoutDashboard, ShieldCheck, Trash2 } from 'lucide-react';
+import { BarChart3, Box, LayoutDashboard, Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import CreateStoreForm from './components/CreateStoreForm';
 import ActiveRunBanner from './components/ActiveRunBanner';
@@ -66,7 +66,6 @@ export default function App() {
           </div>
           <div>
             <h1>Shopify Creator</h1>
-            <p>v1.0.4</p>
           </div>
         </div>
 
@@ -80,16 +79,6 @@ export default function App() {
             <span>History</span>
           </a>
         </nav>
-
-        <div className="rail-footer">
-          <div className="rail-status">
-            <ShieldCheck size={18} />
-            <div>
-              <span>Production</span>
-              <strong>Pipeline online</strong>
-            </div>
-          </div>
-        </div>
       </aside>
 
       <div className="workspace" id="dashboard">
@@ -118,11 +107,6 @@ export default function App() {
 
         <footer className="footer">
           <p>Built with n8n, Gemini/Groq, Postgres, and Shopify Admin API</p>
-          <div>
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-            <span>API Documentation</span>
-          </div>
         </footer>
       </div>
     </div>

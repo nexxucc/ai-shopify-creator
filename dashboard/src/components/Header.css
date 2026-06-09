@@ -42,18 +42,6 @@
   white-space: nowrap;
 }
 
-.utility-icons {
-  display: inline-flex;
-  align-items: center;
-  gap: 22px;
-  color: var(--text-soft);
-  margin-left: 20px;
-}
-
-.utility-icons svg {
-  stroke-width: 1.8;
-}
-
 @media (max-width: 1120px) {
   .topbar {
     height: auto;
@@ -79,9 +67,5 @@
 
   .topbar-meta {
     gap: 14px;
-  }
-
-  .utility-icons {
-    display: none;
   }
 }

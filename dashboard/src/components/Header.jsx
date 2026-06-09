@@ -1,8 +1,20 @@
-import { Bell, Circle, UserCircle } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import './Header.css';
 
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('en-US');
+}
+
 export default function Header({ stats }) {
-  const formattedRuns = Number(stats.total || 0).toLocaleString('en-US');
+  const chips = [
+    ['Total runs', stats.total],
+    ['Successful', stats.successful],
+    ['In progress', stats.running],
+  ];
+
+  if (stats.failed > 0) {
+    chips.push(['Failed', stats.failed]);
+  }
 
   return (
     <header className="topbar">
@@ -10,19 +22,13 @@ export default function Header({ stats }) {
         <h2>Shopify Store Creator</h2>
       </div>
 
-      <div className="topbar-meta" aria-label="System summary">
-        <div className="meta-chip">
-          <Circle size={8} fill="currentColor" />
-          <span>System capacity: 88%</span>
-        </div>
-        <div className="meta-chip">
-          <Circle size={8} fill="currentColor" />
-          <span>Total runs: {formattedRuns}</span>
-        </div>
-        <div className="utility-icons" aria-hidden="true">
-          <Bell size={21} />
-          <UserCircle size={23} />
-        </div>
+      <div className="topbar-meta" aria-label="Run summary">
+        {chips.map(([label, value]) => (
+          <div className="meta-chip" key={label}>
+            <Circle size={8} fill="currentColor" />
+            <span>{label}: {formatNumber(value)}</span>
+          </div>
+        ))}
       </div>
     </header>
   );
